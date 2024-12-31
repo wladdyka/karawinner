@@ -4,8 +4,10 @@
 
 // Enum for keycodes
 enum KeyCode {
-    RWIN = 92,    // Right Windows key
+    LWIN = 91,    // Left Windows key
+    RWIN = 92,    // Right Windows key (optional, use if needed)
     J = 36,       // J key
+    HOME = 71,    // Home key
     LEFT_ARROW = 75 // Arrow Left key
 };
 
@@ -38,7 +40,7 @@ int main() {
 
     while (interception_receive(context, device = interception_wait(context),
                                 (InterceptionStroke*)&kstroke, 1) > 0) {
-        // Determine key state (down or up)
+        // Log raw key press or release
         std::cout << "Raw Key Code: " << kstroke.code
                   << ", State: " << kstroke.state
                   << std::endl;
@@ -46,13 +48,22 @@ int main() {
         // Track key states
         keyState[kstroke.code] = kstroke.state;
 
+        // Permanent remap: LWIN (92) to HOME (75)
+        if (kstroke.code == LWIN) {
+            std::cout << "LWIN key remapped to HOME key" << std::endl;
+
+            // Send the HOME key instead of LWIN
+            sendKey(context, device, HOME, kstroke.state);
+            continue; // Do not pass the original LWIN key event
+        }
+
         // Suppress Right Windows key
         if (kstroke.code == RWIN) {
             std::cout << "Right Windows key " << (kstroke.state == 3 ? "pressed" : "released") << " (suppressed)" << std::endl;
             continue; // Do not pass Right Windows key to the system
         }
 
-        // Check for Right Windows + J
+        // Shortcut: Right Windows + J -> Left Arrow
         if (kstroke.code == J && isKeyPressed(RWIN) && kstroke.state == 0) {
             std::cout << "Shortcut triggered: Right Windows + J -> Left Arrow" << std::endl;
 
@@ -69,3 +80,4 @@ int main() {
     interception_destroy_context(context);
     return 0;
 }
+

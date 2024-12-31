@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 # Define the URL and file name for the prebuilt release
 set(INTERCEPTION_RELEASE_URL "https://github.com/wladdyka/interception/releases/download/v1.0.1/interception.zip")
 set(INTERCEPTION_ZIP "${CMAKE_BINARY_DIR}/interception.zip")
-set(INTERCEPTION_DIR "${CMAKE_BINARY_DIR}/interception/library/x64")
+set(INTERCEPTION_DIR "${CMAKE_BINARY_DIR}/interception")
 
 # Add custom command to download the precompiled release
 if(NOT EXISTS ${INTERCEPTION_ZIP})
@@ -29,5 +29,14 @@ add_executable(karawinner main.cpp)
 message(STATUS "Interception directory: ${INTERCEPTION_DIR}")
 
 # Link the Interception library
-target_include_directories(karawinner PRIVATE ${INTERCEPTION_DIR}/interception/library)
-target_link_libraries(karawinner PRIVATE ${INTERCEPTION_DIR}/interception/library/x64/interception.lib)
+target_include_directories(karawinner PRIVATE ${INTERCEPTION_DIR}/library/x64/interception/library)
+target_link_libraries(karawinner PRIVATE ${INTERCEPTION_DIR}/library/x64/interception/library/x64/interception.lib)
+
+# Copy interception.dll to the output directory after the build
+add_custom_command(
+        TARGET karawinner POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${INTERCEPTION_DIR}/library/x64/interception/library/x64/interception.dll
+        $<TARGET_FILE_DIR:karawinner>
+        COMMENT "Copying interception.dll to the output directory..."
+)

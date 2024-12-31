@@ -6,14 +6,14 @@
 enum KeyCode {
     RWIN = 92,    // Right Windows key
     J = 36,       // J key
-    LEFT_ARROW = 75 // Updated: Correct scancode for Arrow Left
+    LEFT_ARROW = 75 // Arrow Left key
 };
 
-// Helper to track modifier key states
-std::unordered_map<int, bool> modifierState;
+// Helper to track key states
+std::unordered_map<int, bool> keyState;
 
-bool isModifierPressed(KeyCode code) {
-    return modifierState.count(code) && modifierState[code];
+bool isKeyPressed(KeyCode code) {
+    return keyState.count(code) && keyState[code];
 }
 
 void sendKey(InterceptionContext context, InterceptionDevice device, KeyCode keyCode, int keyState) {
@@ -34,36 +34,32 @@ int main() {
 
     std::cout << "Karawinner started. Press Right Windows + J to send Left Arrow key." << std::endl;
 
+    bool rWinPressed = false;
     while (interception_receive(context, device = interception_wait(context), &stroke, 1) > 0) {
         auto *keystroke = reinterpret_cast<InterceptionKeyStroke *>(&stroke);
 
         // Log every key press or release
+        bool isDown = (keystroke->state & INTERCEPTION_KEY_DOWN) != 0;
         std::cout << "Raw Key Code: " << keystroke->code
-                  << ", State: " << ((keystroke->state & INTERCEPTION_KEY_DOWN) ? "DOWN" : "UP")
+                  << ", State: " << (isDown ? "DOWN" : "UP")
                   << std::endl;
 
-        // Track the Right Windows key
+        // Suppress Right Windows key
         if (keystroke->code == RWIN) {
-            bool isDown = (keystroke->state & INTERCEPTION_KEY_DOWN) != 0;
-            modifierState[RWIN] = isDown;
-            std::cout << "Right Windows key " << (isDown ? "pressed" : "released") << std::endl;
+            rWinPressed = true;
+            continue;
         }
 
-        // Track the J key
-        if (keystroke->code == J) {
-            bool isDown = (keystroke->state & INTERCEPTION_KEY_DOWN) != 0;
-            std::cout << "J key " << (isDown ? "pressed" : "released") << std::endl;
-
-            // Check for Right Windows + J
-            if (isDown && isModifierPressed(RWIN)) {
-                std::cout << "Shortcut triggered: Right Windows + J -> Left Arrow" << std::endl;
-
-                // Send the Left Arrow key
-                sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_DOWN);
-                sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_UP);
-            }
+        // Check for Right Windows + J // && isKeyPressed(RWIN) && isDown
+        if (keystroke->code == J && rWinPressed) {
+            std::cout << "Shortcut triggered: Right Windows + J -> Left Arrow" << std::endl;
+            // Send the Left Arrow key
+            sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_UP);
+            continue; // Prevent passing J through to the system when shortcut is triggered
         }
 
+        rWinPressed = false;
         // Pass through all other keys
         interception_send(context, device, &stroke, 1);
     }

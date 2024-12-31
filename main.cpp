@@ -4,10 +4,9 @@
 
 // Enum for keycodes
 enum KeyCode {
-    // Modifiers
-    RWIN = 92,   // Replace with actual key code from logs
-    J = 36,      // Replace with actual key code from logs
-    LEFT_ARROW = 0xE04B // Replace with actual scancode if different
+    RWIN = 92,    // Right Windows key
+    J = 36,       // J key
+    LEFT_ARROW = 75 // Updated: Correct scancode for Arrow Left
 };
 
 // Helper to track modifier key states
@@ -50,15 +49,19 @@ int main() {
             std::cout << "Right Windows key " << (isDown ? "pressed" : "released") << std::endl;
         }
 
-        // Check for Right Windows + J
-        if (keystroke->code == J && isModifierPressed(RWIN)) {
-            std::cout << "Shortcut triggered: Right Windows + J -> Left Arrow" << std::endl;
+        // Track the J key
+        if (keystroke->code == J) {
+            bool isDown = (keystroke->state & INTERCEPTION_KEY_DOWN) != 0;
+            std::cout << "J key " << (isDown ? "pressed" : "released") << std::endl;
 
-            // Send the Left Arrow key
-            sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_DOWN);
-            sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_UP);
+            // Check for Right Windows + J
+            if (isDown && isModifierPressed(RWIN)) {
+                std::cout << "Shortcut triggered: Right Windows + J -> Left Arrow" << std::endl;
 
-            continue;
+                // Send the Left Arrow key
+                sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_DOWN);
+                sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_UP);
+            }
         }
 
         // Pass through all other keys

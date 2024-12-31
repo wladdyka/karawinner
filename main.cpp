@@ -20,48 +20,53 @@ void sendKey(InterceptionContext context, InterceptionDevice device, KeyCode key
     InterceptionKeyStroke keystroke;
     keystroke.code = keyCode;
     keystroke.state = keyState;
-    interception_send(context, device, reinterpret_cast<InterceptionStroke*>(&keystroke), 1);
+
+    // Cast InterceptionKeyStroke to InterceptionStroke
+    interception_send(context, device, reinterpret_cast<const InterceptionStroke*>(&keystroke), 1);
 }
+
 
 int main() {
     // Initialize Interception
     InterceptionContext context = interception_create_context();
     InterceptionDevice device;
-    InterceptionStroke stroke;
+    InterceptionKeyStroke kstroke;
 
-    // Filter for keyboard input
-    interception_set_filter(context, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
+    // Filter for key down and up events
+    interception_set_filter(context, interception_is_keyboard,
+                            INTERCEPTION_FILTER_KEY_DOWN | INTERCEPTION_FILTER_KEY_UP);
 
     std::cout << "Karawinner started. Press Right Windows + J to send Left Arrow key." << std::endl;
 
-    bool rWinPressed = false;
-    while (interception_receive(context, device = interception_wait(context), &stroke, 1) > 0) {
-        auto *keystroke = reinterpret_cast<InterceptionKeyStroke *>(&stroke);
-
-        // Log every key press or release
-        bool isDown = (keystroke->state & INTERCEPTION_KEY_DOWN) != 0;
-        std::cout << "Raw Key Code: " << keystroke->code
+    while (interception_receive(context, device = interception_wait(context),
+                                (InterceptionStroke*)&kstroke, 1) > 0) {
+        // Determine key state (down or up)
+        bool isDown = !(kstroke.state & INTERCEPTION_KEY_UP);
+        std::cout << "Raw Key Code: " << kstroke.code
                   << ", State: " << (isDown ? "DOWN" : "UP")
                   << std::endl;
 
+        // Track key states
+        keyState[kstroke.code] = isDown;
+
         // Suppress Right Windows key
-        if (keystroke->code == RWIN) {
-            rWinPressed = true;
-            continue;
+        if (kstroke.code == RWIN) {
+            std::cout << "Right Windows key " << (isDown ? "pressed" : "released") << " (suppressed)" << std::endl;
+            continue; // Do not pass Right Windows key to the system
         }
 
-        // Check for Right Windows + J // && isKeyPressed(RWIN) && isDown
-        if (keystroke->code == J && rWinPressed) {
+        // Check for Right Windows + J
+        if (kstroke.code == J && isKeyPressed(RWIN) && isDown) {
             std::cout << "Shortcut triggered: Right Windows + J -> Left Arrow" << std::endl;
+
             // Send the Left Arrow key
             sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_DOWN);
             sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_UP);
-            continue; // Prevent passing J through to the system when shortcut is triggered
+            continue; // Do not pass J key to the system when shortcut is triggered
         }
 
-        rWinPressed = false;
         // Pass through all other keys
-        interception_send(context, device, &stroke, 1);
+        interception_send(context, device, reinterpret_cast<const InterceptionStroke*>(&kstroke), 1);
     }
 
     interception_destroy_context(context);

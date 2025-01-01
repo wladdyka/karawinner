@@ -8,11 +8,15 @@ enum KeyCode {
     LCTRL = 29,
     LWIN = 91,
     RWIN = 92,
+    I = 23,
     J = 36,
+    K = 37,
     L = 38,
     HOME = 71,
+    UP_ARROW = 72,
     LEFT_ARROW = 75,
-    RIGHT_ARROW = 77
+    RIGHT_ARROW = 77,
+    DOWN_ARROW = 80
 };
 
 std::unordered_map<int, short> keyState;
@@ -59,13 +63,16 @@ int main() {
             continue; // Do not pass Right Windows key to the system
         }
 
-        bool leftArrowShortcut = kstroke.code == J && keyState[RWIN] == 2 && kstroke.state == 0;
-        if (leftArrowShortcut && keyState[LCTRL] == 0) {
-            std::cout << "Shortcut triggered: Right Windows + Left Windows J -> Home" << std::endl;
+        /*
+        if (kstroke.code == J && keyState[RWIN] == 2 && keyState[LCTRL] == 0) {
+            std::cout << "Shortcut triggered: Right Windows + Left Windows J -> Home" << keyState[LCTRL] << std::endl;
 
             sendKey(context, device, HOME, kstroke.state);
             continue;
-        } else if (leftArrowShortcut) {
+        }
+        */
+
+        if (kstroke.code == J && kstroke.state == 0 && keyState[RWIN] == 2) {
             std::cout << "Shortcut triggered: Right Windows + J -> Left Arrow" << std::endl;
 
             sendKey(context, device, LEFT_ARROW, INTERCEPTION_KEY_DOWN);
@@ -73,12 +80,27 @@ int main() {
             continue;
         }
 
-        bool rightArrowShortcut = kstroke.code == L && keyState[RWIN] == 2 && kstroke.state == 0;
-        if (rightArrowShortcut) {
+        if (kstroke.code == L && kstroke.state == 0 && keyState[RWIN] == 2) {
             std::cout << "Shortcut triggered: Right Windows + L -> Right Arrow" << std::endl;
 
             sendKey(context, device, RIGHT_ARROW, INTERCEPTION_KEY_DOWN);
             sendKey(context, device, RIGHT_ARROW, INTERCEPTION_KEY_UP);
+            continue;
+        }
+
+        if (kstroke.code == K && kstroke.state == 0 && keyState[RWIN] == 2) {
+            std::cout << "Shortcut triggered: Right Windows + K -> Down Arrow" << std::endl;
+
+            sendKey(context, device, DOWN_ARROW, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, DOWN_ARROW, INTERCEPTION_KEY_UP);
+            continue;
+        }
+
+        if (kstroke.code == I && kstroke.state == 0 && keyState[RWIN] == 2) {
+            std::cout << "Shortcut triggered: Right Windows + I -> Up Arrow" << std::endl;
+
+            sendKey(context, device, UP_ARROW, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, UP_ARROW, INTERCEPTION_KEY_UP);
             continue;
         }
 

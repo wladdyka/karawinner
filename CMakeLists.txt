@@ -29,14 +29,14 @@ add_executable(karawinner main.cpp)
 message(STATUS "Interception directory: ${INTERCEPTION_DIR}")
 
 # Link the Interception library
-target_include_directories(karawinner PRIVATE ${INTERCEPTION_DIR}/library/x64/interception/library)
-target_link_libraries(karawinner PRIVATE ${INTERCEPTION_DIR}/library/x64/interception/library/x64/interception.lib)
+target_include_directories(karawinner PRIVATE ${INTERCEPTION_DIR}/interception/library)
+target_link_libraries(karawinner PRIVATE ${INTERCEPTION_DIR}/interception/library/x64/interception.lib)
 
 # Copy interception.dll to the output directory after the build
 add_custom_command(
         TARGET karawinner POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
-        ${INTERCEPTION_DIR}/library/x64/interception/library/x64/interception.dll
+        ${INTERCEPTION_DIR}/interception/library/x64/interception.dll
         $<TARGET_FILE_DIR:karawinner>
         COMMENT "Copying interception.dll to the output directory..."
 )

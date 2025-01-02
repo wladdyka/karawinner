@@ -12,6 +12,7 @@ enum KeyCode {
     J = 36,
     K = 37,
     L = 38,
+    SPACE = 57,
     HOME = 71,
     UP_ARROW = 72,
     LEFT_ARROW = 75,
@@ -48,13 +49,13 @@ int main() {
         keyState[kstroke.code] = kstroke.state;
 
         if (kstroke.code == CAPSLOCK) {
-            sendKey(context, device, BACKSPACE, kstroke.state);
+            sendKey(context, device, BACKSPACE, kstroke.state - 2);
             continue;
         }
 
         if (kstroke.code == LWIN) {
             std::cout << "Left Windows key " << (kstroke.state == 2 ? "pressed" : "released") << " (suppressed)" << std::endl;
-            sendKey(context, device, LCTRL, kstroke.state - 2);
+            sendKey(context, device, LCTRL, kstroke.state);
             continue;
         }
 
@@ -64,7 +65,7 @@ int main() {
         }
 
         /*
-        if (kstroke.code == J && keyState[RWIN] == 2 && keyState[LCTRL] == 0) {
+        if (kstroke.code == J && kstroke.state == 0 && keyState[RWIN] == 2 && keyState[LWIN] == 2) {
             std::cout << "Shortcut triggered: Right Windows + Left Windows J -> Home" << keyState[LCTRL] << std::endl;
 
             sendKey(context, device, HOME, kstroke.state);

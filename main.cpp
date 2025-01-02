@@ -53,8 +53,13 @@ int main() {
             continue;
         }
 
-        if (kstroke.code == LWIN) {
+        if (kstroke.code == LWIN && keyState[RWIN] == 2) {
+            continue;
+        }
+
+        if (kstroke.code == LWIN && keyState[RWIN] == 3) {
             std::cout << "Left Windows key " << (kstroke.state == 2 ? "pressed" : "released") << " (suppressed)" << std::endl;
+
             sendKey(context, device, LCTRL, kstroke.state);
             continue;
         }
@@ -64,10 +69,11 @@ int main() {
             continue;
         }
 
-        if (keyState[J] == 1 && keyState[RWIN] == 2 && keyState[LWIN] == 2) {
+        if (keyState[J] == 1 && keyState[RWIN] == 2 && keyState[LCTRL] == 1) {
             std::cout << "Shortcut triggered: Right Windows + Left Windows J -> Home" << keyState[LCTRL] << std::endl;
 
-            sendKey(context, device, HOME, kstroke.state);
+            sendKey(context, device, HOME, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, HOME, INTERCEPTION_KEY_UP);
             continue;
         }
 

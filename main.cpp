@@ -49,7 +49,7 @@ int main() {
         keyState[kstroke.code] = kstroke.state;
 
         if (kstroke.code == CAPSLOCK) {
-            sendKey(context, device, BACKSPACE, kstroke.state - 2);
+            sendKey(context, device, BACKSPACE, kstroke.state);
             continue;
         }
 

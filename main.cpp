@@ -22,7 +22,7 @@ namespace scancode {
     };
 }
 
-void hueta(InterceptionContext context, InterceptionDevice device, short keyCode, int keyState) {
+void sendKey(InterceptionContext context, InterceptionDevice device, short keyCode, int keyState) {
     InterceptionKeyStroke keystroke;
     keystroke.code = keyCode;
     keystroke.state = keyState;
@@ -45,77 +45,46 @@ bool operator==(const InterceptionKeyStroke &first,
     return first.code == second.code && first.state == second.state;
 }
 
-bool homeShortcut(const InterceptionKeyStroke &kstroke) {
+bool homeShortcut(const InterceptionKeyStroke &kstroke)
+{
     static int lwin = 0, ralt = 0, j = 0;
 
-    if (lwin + ralt + j < 2) {
-        if (kstroke == lwinDown) { lwin = 1; }
-        if (kstroke == lwinUp) { lwin = 0; }
-        if (kstroke == raltDown) { ralt = 1; }
-        if (kstroke == raltUp) { ralt = 0; }
-        if (kstroke == jDown) { j = 1; }
-        if (kstroke == jUp) { j = 0; }
-        return true;
-    }
+    if (kstroke == lwinDown)  lwin = 1;
+    if (kstroke == lwinUp)    lwin = 0;
 
-    if (lwin == 0 && (kstroke == lwinDown || kstroke == lwinUp)) {
+    if (kstroke == raltDown)  ralt = 1;
+    if (kstroke == raltUp)    ralt = 0;
+
+    if (kstroke == jDown)     j = 1;
+    if (kstroke == jUp)       j = 0;
+
+    if (lwin == 1 && ralt == 1 && j == 1) {
         return false;
-    }
-
-    if (ralt == 0 && (kstroke == raltDown || kstroke == raltUp)) {
-        return false;
-    }
-
-    if (j == 0 && (kstroke == jDown || kstroke == jUp)) {
-        return false;
-    }
-
-    if (kstroke == lwinUp) {
-        lwin = 0;
-    } else if (kstroke == raltUp) {
-        ralt = 0;
-    } else if (kstroke == jUp) {
-        j = 0;
     }
 
     return true;
 }
 
-bool endShortcut(const InterceptionKeyStroke &kstroke) {
+bool endShortcut(const InterceptionKeyStroke &kstroke)
+{
     static int lwin = 0, ralt = 0, l = 0;
 
-    if (lwin + ralt + l < 2) {
-        if (kstroke == lwinDown) { lwin = 1; }
-        if (kstroke == lwinUp) { lwin = 0; }
-        if (kstroke == raltDown) { ralt = 1; }
-        if (kstroke == raltUp) { ralt = 0; }
-        if (kstroke == lDown) { l = 1; }
-        if (kstroke == lUp) { l = 0; }
-        return true;
-    }
+    if (kstroke == lwinDown)  lwin = 1;
+    if (kstroke == lwinUp)    lwin = 0;
 
-    if (lwin == 0 && (kstroke == lwinDown || kstroke == lwinUp)) {
+    if (kstroke == raltDown)  ralt = 1;
+    if (kstroke == raltUp)    ralt = 0;
+
+    if (kstroke == lDown)     l = 1;
+    if (kstroke == lUp)       l = 0;
+
+    if (lwin == 1 && ralt == 1 && l == 1) {
         return false;
-    }
-
-    if (ralt == 0 && (kstroke == raltDown || kstroke == raltUp)) {
-        return false;
-    }
-
-    if (l == 0 && (kstroke == lDown || kstroke == lUp)) {
-        return false;
-    }
-
-    if (kstroke == lwinUp) {
-        lwin = 0;
-    } else if (kstroke == raltUp) {
-        ralt = 0;
-    } else if (kstroke == lUp) {
-        l = 0;
     }
 
     return true;
 }
+
 
 bool leftShortcut(const InterceptionKeyStroke &kstroke) {
     static int ralt = 0, j = 0;
@@ -164,29 +133,29 @@ int main() {
 
         if (!endShortcut(kstroke)) {
             cout << "endShortcut()" << endl;
-            hueta(context, device, scancode::end, INTERCEPTION_KEY_DOWN);
-            hueta(context, device, scancode::end, INTERCEPTION_KEY_UP);
+            sendKey(context, device, scancode::end, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, scancode::end, INTERCEPTION_KEY_UP);
             continue;
         }
 
         if (!homeShortcut(kstroke)) {
             cout << "homeShortcut()" << endl;
-            hueta(context, device, scancode::home, INTERCEPTION_KEY_DOWN);
-            hueta(context, device, scancode::home, INTERCEPTION_KEY_UP);
+            sendKey(context, device, scancode::home, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, scancode::home, INTERCEPTION_KEY_UP);
             continue;
         }
 
         if (!leftShortcut(kstroke)) {
             cout << "leftShortcut()" << endl;
-            hueta(context, device, scancode::left, INTERCEPTION_KEY_DOWN);
-            hueta(context, device, scancode::left, INTERCEPTION_KEY_UP);
+            sendKey(context, device, scancode::left, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, scancode::left, INTERCEPTION_KEY_UP);
             continue;
         }
 
         if (!rightShortcut(kstroke)) {
             cout << "rightShortcut()" << endl;
-            hueta(context, device, scancode::right, INTERCEPTION_KEY_DOWN);
-            hueta(context, device, scancode::right, INTERCEPTION_KEY_UP);
+            sendKey(context, device, scancode::right, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, scancode::right, INTERCEPTION_KEY_UP);
             continue;
         }
 

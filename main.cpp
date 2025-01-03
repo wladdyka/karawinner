@@ -8,17 +8,21 @@ namespace scancode {
     enum {
         esc  = 0x01,
         ctrl = 0x1D,
-        alt  = 0x38,
-        del  = 0x53,
+        //alt  = 0x38,
+        j = 36,
+        lwin = 91,
+        rwin = 92,
+        home = 71,
     };
 }
 
-InterceptionKeyStroke ctrl_down = {scancode::ctrl, INTERCEPTION_KEY_DOWN                      , 0};
-InterceptionKeyStroke alt_down  = {scancode::alt , INTERCEPTION_KEY_DOWN                      , 0};
-InterceptionKeyStroke del_down  = {scancode::del , INTERCEPTION_KEY_DOWN | INTERCEPTION_KEY_E0, 0};
-InterceptionKeyStroke ctrl_up   = {scancode::ctrl, INTERCEPTION_KEY_UP                        , 0};
-InterceptionKeyStroke alt_up    = {scancode::alt , INTERCEPTION_KEY_UP                        , 0};
-InterceptionKeyStroke del_up    = {scancode::del , INTERCEPTION_KEY_UP | INTERCEPTION_KEY_E0  , 0};
+InterceptionKeyStroke rWinDown = {scancode::rwin, INTERCEPTION_KEY_DOWN | INTERCEPTION_KEY_E0, 0};
+InterceptionKeyStroke jDown  = {scancode::j , INTERCEPTION_KEY_DOWN, 0};
+InterceptionKeyStroke lWinDown  = {scancode::lwin , INTERCEPTION_KEY_DOWN | INTERCEPTION_KEY_E0, 0};
+
+InterceptionKeyStroke rWinUp   = {scancode::rwin, INTERCEPTION_KEY_UP | INTERCEPTION_KEY_E0, 0};
+InterceptionKeyStroke jUp    = {scancode::j , INTERCEPTION_KEY_UP, 0};
+InterceptionKeyStroke lWinUp    = {scancode::lwin , INTERCEPTION_KEY_UP | INTERCEPTION_KEY_E0, 0};
 
 bool operator==(const InterceptionKeyStroke &first,
                 const InterceptionKeyStroke &second) {
@@ -26,39 +30,48 @@ bool operator==(const InterceptionKeyStroke &first,
 }
 
 bool shall_produce_keystroke(const InterceptionKeyStroke &kstroke) {
-    static int ctrl_is_down = 0, alt_is_down = 0, del_is_down = 0;
+    static int rWinIsDown = 0, jIsDown = 0, lWinIsDown = 0;
 
-    if (ctrl_is_down + alt_is_down + del_is_down < 2) {
-        if (kstroke == ctrl_down) { ctrl_is_down = 1; }
-        if (kstroke == ctrl_up  ) { ctrl_is_down = 0; }
-        if (kstroke == alt_down ) { alt_is_down = 1;  }
-        if (kstroke == alt_up   ) { alt_is_down = 0;  }
-        if (kstroke == del_down ) { del_is_down = 1;  }
-        if (kstroke == del_up   ) { del_is_down = 0;  }
+    //cout << "sum:" << ctrl_is_down + rwin_is_down + lwin_is_down << endl;
+    if (rWinIsDown + jIsDown + lWinIsDown < 2) {
+        if (kstroke == rWinDown) { rWinIsDown = 1; }
+        if (kstroke == rWinUp  ) { rWinIsDown = 0; }
+        if (kstroke == jDown ) { jIsDown = 1;  }
+        if (kstroke == jUp   ) { jIsDown = 0;  }
+        if (kstroke == lWinDown ) { lWinIsDown = 1;  }
+        if (kstroke == lWinUp   ) { lWinIsDown = 0;  }
         return true;
     }
 
-    if (ctrl_is_down == 0 && (kstroke == ctrl_down || kstroke == ctrl_up)) {
+    if (rWinIsDown == 0 && (kstroke == rWinDown || kstroke == rWinUp)) {
         return false;
     }
 
-    if (alt_is_down == 0 && (kstroke == alt_down || kstroke == alt_up)) {
+    if (jIsDown == 0 && (kstroke == jDown || kstroke == jUp)) {
         return false;
     }
 
-    if (del_is_down == 0 && (kstroke == del_down || kstroke == del_up)) {
+    if (lWinIsDown == 0 && (kstroke == lWinDown || kstroke == lWinUp)) {
         return false;
     }
 
-    if (kstroke == ctrl_up) {
-        ctrl_is_down = 0;
-    } else if (kstroke == alt_up) {
-        alt_is_down = 0;
-    } else if (kstroke == del_up) {
-        del_is_down = 0;
+    if (kstroke == rWinUp) {
+        rWinIsDown = 0;
+    } else if (kstroke == jUp) {
+        jIsDown = 0;
+    } else if (kstroke == lWinUp) {
+        lWinIsDown = 0;
     }
 
     return true;
+}
+
+void sendKey(InterceptionContext context, InterceptionDevice device, short keyCode, int keyState) {
+    InterceptionKeyStroke keystroke;
+    keystroke.code = keyCode;
+    keystroke.state = keyState;
+
+    interception_send(context, device, reinterpret_cast<const InterceptionStroke*>(&keystroke), 1);
 }
 
 int main() {
@@ -73,8 +86,22 @@ int main() {
 
     while (interception_receive(context, device = interception_wait(context),
                                 (InterceptionStroke *)&kstroke, 1) > 0) {
+        //cout << kstroke.code << " " << kstroke.state << endl;
+
         if (!shall_produce_keystroke(kstroke)) {
-            cout << "ctrl-alt-del pressed" << endl;
+            cout << "home shorcut triggered" << endl;
+            sendKey(context, device, scancode::home, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, scancode::home, INTERCEPTION_KEY_UP);
+            continue;
+        }
+
+        if (kstroke.code == scancode::lwin)
+        {
+            continue;
+        }
+
+        if (kstroke.code == scancode::rwin)
+        {
             continue;
         }
 

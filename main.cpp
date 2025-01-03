@@ -19,6 +19,8 @@ namespace scancode {
         ralt = 56,
         left = 75,
         right = 77,
+        capslock = 58,
+        backspace = 14,
     };
 }
 
@@ -85,7 +87,6 @@ bool endShortcut(const InterceptionKeyStroke &kstroke)
     return true;
 }
 
-
 bool leftShortcut(const InterceptionKeyStroke &kstroke) {
     static int ralt = 0, j = 0;
 
@@ -100,7 +101,6 @@ bool leftShortcut(const InterceptionKeyStroke &kstroke) {
 
     return true;
 }
-
 
 bool rightShortcut(const InterceptionKeyStroke &kstroke) {
     static int ralt = 0, l = 0;
@@ -161,7 +161,16 @@ int main() {
 
         if (kstroke.code == scancode::alt) continue;
         if (kstroke.code == scancode::ralt) continue;
-        if (kstroke.code == scancode::lwin) continue;
+
+        if (kstroke.code == scancode::lwin) {
+            sendKey(context, device, scancode::ctrl, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, scancode::ctrl, INTERCEPTION_KEY_UP);
+        }
+
+        if (kstroke.code == scancode::capslock) {
+            sendKey(context, device, scancode::backspace, kstroke.state);
+            continue;
+        }
 
         interception_send(context, device, (InterceptionStroke *)&kstroke, 1);
 

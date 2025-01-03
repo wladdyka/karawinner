@@ -1,87 +1,90 @@
-#include <interception.h>
 #include <iostream>
-#include <unordered_map>
-#include <chrono>
 
-enum KeyCode {
-    BACKSPACE = 14,
-    CAPSLOCK = 58,
-    LCTRL = 29,
-    LWIN = 91,
-    RWIN = 92,
-    J = 36,
-    HOME = 71
-};
+#include <interception.h>
 
-// Track key states with timestamps
-std::unordered_map<int, std::chrono::steady_clock::time_point> keyTimestamps;
+using namespace std;
 
-void sendKey(InterceptionContext context, InterceptionDevice device, KeyCode keyCode, int keyState) {
-    InterceptionKeyStroke keystroke;
-    keystroke.code = keyCode;
-    keystroke.state = keyState;
-
-    interception_send(context, device, reinterpret_cast<const InterceptionStroke*>(&keystroke), 1);
+namespace scancode {
+    enum {
+        esc  = 0x01,
+        ctrl = 0x1D,
+        alt  = 0x38,
+        del  = 0x53,
+    };
 }
 
-// Check if a key was pressed recently (within thresholdMs milliseconds)
-bool isKeyRecentlyPressed(int keyCode, int thresholdMs) {
-    auto now = std::chrono::steady_clock::now();
-    if (keyTimestamps.count(keyCode)) {
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - keyTimestamps[keyCode]).count();
-        return elapsed < thresholdMs;
+InterceptionKeyStroke ctrl_down = {scancode::ctrl, INTERCEPTION_KEY_DOWN                      , 0};
+InterceptionKeyStroke alt_down  = {scancode::alt , INTERCEPTION_KEY_DOWN                      , 0};
+InterceptionKeyStroke del_down  = {scancode::del , INTERCEPTION_KEY_DOWN | INTERCEPTION_KEY_E0, 0};
+InterceptionKeyStroke ctrl_up   = {scancode::ctrl, INTERCEPTION_KEY_UP                        , 0};
+InterceptionKeyStroke alt_up    = {scancode::alt , INTERCEPTION_KEY_UP                        , 0};
+InterceptionKeyStroke del_up    = {scancode::del , INTERCEPTION_KEY_UP | INTERCEPTION_KEY_E0  , 0};
+
+bool operator==(const InterceptionKeyStroke &first,
+                const InterceptionKeyStroke &second) {
+    return first.code == second.code && first.state == second.state;
+}
+
+bool shall_produce_keystroke(const InterceptionKeyStroke &kstroke) {
+    static int ctrl_is_down = 0, alt_is_down = 0, del_is_down = 0;
+
+    if (ctrl_is_down + alt_is_down + del_is_down < 2) {
+        if (kstroke == ctrl_down) { ctrl_is_down = 1; }
+        if (kstroke == ctrl_up  ) { ctrl_is_down = 0; }
+        if (kstroke == alt_down ) { alt_is_down = 1;  }
+        if (kstroke == alt_up   ) { alt_is_down = 0;  }
+        if (kstroke == del_down ) { del_is_down = 1;  }
+        if (kstroke == del_up   ) { del_is_down = 0;  }
+        return true;
     }
-    return false;
+
+    if (ctrl_is_down == 0 && (kstroke == ctrl_down || kstroke == ctrl_up)) {
+        return false;
+    }
+
+    if (alt_is_down == 0 && (kstroke == alt_down || kstroke == alt_up)) {
+        return false;
+    }
+
+    if (del_is_down == 0 && (kstroke == del_down || kstroke == del_up)) {
+        return false;
+    }
+
+    if (kstroke == ctrl_up) {
+        ctrl_is_down = 0;
+    } else if (kstroke == alt_up) {
+        alt_is_down = 0;
+    } else if (kstroke == del_up) {
+        del_is_down = 0;
+    }
+
+    return true;
 }
 
 int main() {
-    InterceptionContext context = interception_create_context();
+    InterceptionContext context;
     InterceptionDevice device;
     InterceptionKeyStroke kstroke;
 
-    // Set filter to capture all keyboard events
-    interception_set_filter(context, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
+    context = interception_create_context();
 
-    std::cout << "Karawinner started. Press LWIN + RWIN + J to send Home key." << std::endl;
+    interception_set_filter(context, interception_is_keyboard,
+                            INTERCEPTION_FILTER_KEY_ALL);
 
     while (interception_receive(context, device = interception_wait(context),
-                                reinterpret_cast<InterceptionStroke*>(&kstroke), 1) > 0) {
-        // Log raw key events
-        std::cout << "Raw Key Code: " << kstroke.code
-                  << ", State: " << kstroke.state << std::endl;
-
-        // Update key timestamps
-        if (kstroke.state == 2) { // Key Down
-            keyTimestamps[kstroke.code] = std::chrono::steady_clock::now();
-        } else if (kstroke.state == 3) { // Key Up
-            keyTimestamps.erase(kstroke.code); // Remove key from active state
-        }
-
-        // Debug: Print states of relevant keys
-        std::cout << "Key Timestamps: "
-                  << "LWIN = " << isKeyRecentlyPressed(LWIN, 100) << ", "
-                  << "RWIN = " << isKeyRecentlyPressed(RWIN, 100) << ", "
-                  << "J = " << isKeyRecentlyPressed(J, 100) << std::endl;
-
-        // Check for LWIN + RWIN + J shortcut
-        if (isKeyRecentlyPressed(LWIN, 100) &&
-            isKeyRecentlyPressed(RWIN, 100) &&
-            isKeyRecentlyPressed(J, 100)) {
-            std::cout << "Shortcut triggered: LWIN + RWIN + J -> Home" << std::endl;
-
-            // Send the Home key
-            sendKey(context, device, HOME, INTERCEPTION_KEY_DOWN);
-            sendKey(context, device, HOME, INTERCEPTION_KEY_UP);
-
-            // Clear timestamps to prevent repeated triggers
-            keyTimestamps.clear();
+                                (InterceptionStroke *)&kstroke, 1) > 0) {
+        if (!shall_produce_keystroke(kstroke)) {
+            cout << "ctrl-alt-del pressed" << endl;
             continue;
         }
 
-        // Pass through all other keys
-        interception_send(context, device, reinterpret_cast<const InterceptionStroke*>(&kstroke), 1);
+        interception_send(context, device, (InterceptionStroke *)&kstroke, 1);
+
+        if (kstroke.code == scancode::esc)
+            break;
     }
 
     interception_destroy_context(context);
+
     return 0;
 }

@@ -166,7 +166,7 @@ bool rightShortcut(const InterceptionKeyStroke &kstroke) {
 
     if (kstroke == raltUp) {
         ralt = 0;
-    } else if (kstroke == jUp) {
+    } else if (kstroke == lUp) {
         l = 0;
     }
 

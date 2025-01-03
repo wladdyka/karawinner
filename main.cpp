@@ -22,6 +22,10 @@ namespace scancode {
         right = 77,
         capslock = 58,
         backspace = 14,
+        up = 72,
+        down = 80,
+        i = 23,
+        k = 37,
     };
 }
 
@@ -37,11 +41,15 @@ InterceptionKeyStroke lwinDown = {scancode::lwin, INTERCEPTION_KEY_DOWN | INTERC
 InterceptionKeyStroke raltDown  = {scancode::alt , INTERCEPTION_KEY_DOWN | INTERCEPTION_KEY_E0, 0};
 InterceptionKeyStroke jDown  = {scancode::j , INTERCEPTION_KEY_DOWN, 0};
 InterceptionKeyStroke lDown  = {scancode::l , INTERCEPTION_KEY_DOWN, 0};
+InterceptionKeyStroke iDown  = {scancode::i , INTERCEPTION_KEY_DOWN, 0};
+InterceptionKeyStroke kDown  = {scancode::k , INTERCEPTION_KEY_DOWN, 0};
 
 InterceptionKeyStroke lwinUp   = {scancode::lwin, INTERCEPTION_KEY_UP | INTERCEPTION_KEY_E0, 0};
 InterceptionKeyStroke raltUp    = {scancode::alt , INTERCEPTION_KEY_UP  | INTERCEPTION_KEY_E0, 0};
 InterceptionKeyStroke jUp    = {scancode::j , INTERCEPTION_KEY_UP , 0};
 InterceptionKeyStroke lUp    = {scancode::l , INTERCEPTION_KEY_UP , 0};
+InterceptionKeyStroke iUp    = {scancode::i , INTERCEPTION_KEY_UP , 0};
+InterceptionKeyStroke kUp    = {scancode::k , INTERCEPTION_KEY_UP , 0};
 
 bool operator==(const InterceptionKeyStroke &first,
                 const InterceptionKeyStroke &second) {
@@ -118,6 +126,36 @@ bool rightShortcut(const InterceptionKeyStroke &kstroke) {
     return true;
 }
 
+bool upShortcut(const InterceptionKeyStroke &kstroke) {
+    static int ralt = 0, i = 0;
+
+    if (kstroke == raltDown) { ralt = 1; }
+    if (kstroke == raltUp)   { ralt = 0; }
+    if (kstroke == iDown)    { i = 1; }
+    if (kstroke == iUp)      { i = 0; }
+
+    if (ralt == 1 && i == 1) {
+        return false;
+    }
+
+    return true;
+}
+
+bool downShortcut(const InterceptionKeyStroke &kstroke) {
+    static int ralt = 0, k = 0;
+
+    if (kstroke == raltDown) { ralt = 1; }
+    if (kstroke == raltUp)   { ralt = 0; }
+    if (kstroke == kDown)    { k = 1; }
+    if (kstroke == kUp)      { k = 0; }
+
+    if (ralt == 1 && k == 1) {
+        return false;
+    }
+
+    return true;
+}
+
 int main() {
     InterceptionContext context;
     InterceptionDevice device;
@@ -157,6 +195,20 @@ int main() {
             cout << "rightShortcut()" << endl;
             sendKey(context, device, scancode::right, INTERCEPTION_KEY_DOWN);
             sendKey(context, device, scancode::right, INTERCEPTION_KEY_UP);
+            continue;
+        }
+
+        if (!upShortcut(kstroke)) {
+            cout << "upShortcut()" << endl;
+            sendKey(context, device, scancode::up, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, scancode::up, INTERCEPTION_KEY_UP);
+            continue;
+        }
+
+        if (!downShortcut(kstroke)) {
+            cout << "downShortcut()" << endl;
+            sendKey(context, device, scancode::down, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, scancode::down, INTERCEPTION_KEY_UP);
             continue;
         }
 

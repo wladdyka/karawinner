@@ -120,54 +120,29 @@ bool endShortcut(const InterceptionKeyStroke &kstroke) {
 bool leftShortcut(const InterceptionKeyStroke &kstroke) {
     static int ralt = 0, j = 0;
 
-    if (ralt + j < 1) {
-        if (kstroke == raltDown) { ralt = 1; }
-        if (kstroke == raltUp) { ralt = 0; }
-        if (kstroke == jDown) { j = 1; }
-        if (kstroke == jUp) { j = 0; }
-        return true;
-    }
+    if (kstroke == raltDown) { ralt = 1; }
+    if (kstroke == raltUp)   { ralt = 0; }
+    if (kstroke == jDown)    { j = 1; }
+    if (kstroke == jUp)      { j = 0; }
 
-    if (ralt == 0 && (kstroke == raltDown || kstroke == raltUp)) {
+    if (ralt == 1 && j == 1) {
         return false;
-    }
-
-    if (j == 0 && (kstroke == jDown || kstroke == jUp)) {
-        return false;
-    }
-
-    if (kstroke == raltUp) {
-        ralt = 0;
-    } else if (kstroke == jUp) {
-        j = 0;
     }
 
     return true;
 }
 
+
 bool rightShortcut(const InterceptionKeyStroke &kstroke) {
     static int ralt = 0, l = 0;
 
-    if (ralt + l < 1) {
-        if (kstroke == raltDown) { ralt = 1; }
-        if (kstroke == raltUp) { ralt = 0; }
-        if (kstroke == lDown) { l = 1; }
-        if (kstroke == lUp) { l = 0; }
-        return true;
-    }
+    if (kstroke == raltDown) { ralt = 1; }
+    if (kstroke == raltUp)   { ralt = 0; }
+    if (kstroke == lDown)    { l = 1; }
+    if (kstroke == lUp)      { l = 0; }
 
-    if (ralt == 0 && (kstroke == raltDown || kstroke == raltUp)) {
+    if (ralt == 1 && l == 1) {
         return false;
-    }
-
-    if (l == 0 && (kstroke == lDown || kstroke == lUp)) {
-        return false;
-    }
-
-    if (kstroke == raltUp) {
-        ralt = 0;
-    } else if (kstroke == lUp) {
-        l = 0;
     }
 
     return true;

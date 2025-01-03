@@ -166,12 +166,16 @@ int main() {
     interception_set_filter(context, interception_is_keyboard,
                             INTERCEPTION_FILTER_KEY_ALL);
 
+    bool homeShortcutTriggered = false;
+    bool endShortcutTriggered = false;
+
     while (interception_receive(context, device = interception_wait(context),
                                 (InterceptionStroke *)&kstroke, 1) > 0) {
         std::cout << kstroke.code << " " << kstroke.state << std::endl;
 
         if (!endShortcut(kstroke)) {
             cout << "endShortcut()" << endl;
+            endShortcutTriggered = true;
             sendKey(context, device, scancode::end, INTERCEPTION_KEY_DOWN);
             sendKey(context, device, scancode::end, INTERCEPTION_KEY_UP);
             continue;
@@ -179,6 +183,7 @@ int main() {
 
         if (!homeShortcut(kstroke)) {
             cout << "homeShortcut()" << endl;
+            homeShortcutTriggered = true;
             sendKey(context, device, scancode::home, INTERCEPTION_KEY_DOWN);
             sendKey(context, device, scancode::home, INTERCEPTION_KEY_UP);
             continue;
@@ -216,8 +221,17 @@ int main() {
         if (kstroke.code == scancode::ralt) continue;
         if (kstroke.code == scancode::rwin) continue;
 
-        if (kstroke.code == scancode::lwin) {
-            sendKey(context, device, scancode::lctrl, kstroke.state);
+        if (kstroke.code == scancode::lwin && !homeShortcutTriggered && !endShortcutTriggered) {
+
+            sendKey(context, device, scancode::down, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, scancode::down, INTERCEPTION_KEY_UP);
+            continue;
+        }
+
+        if (kstroke.code == scancode::lwin)
+        {
+            homeShortcutTriggered = false;
+            endShortcutTriggered = false;
             continue;
         }
 

@@ -30,10 +30,12 @@ void sendKey(InterceptionContext context, InterceptionDevice device, short keyCo
 InterceptionKeyStroke lwinDown = {scancode::lwin, INTERCEPTION_KEY_DOWN | INTERCEPTION_KEY_E0, 0};
 InterceptionKeyStroke raltDown = {scancode::alt , INTERCEPTION_KEY_DOWN | INTERCEPTION_KEY_E0, 0};
 InterceptionKeyStroke jDown    = {scancode::j   , INTERCEPTION_KEY_DOWN, 0};
+InterceptionKeyStroke lDown    = {scancode::l   , INTERCEPTION_KEY_DOWN, 0};
 
 InterceptionKeyStroke lwinUp   = {scancode::lwin, INTERCEPTION_KEY_UP | INTERCEPTION_KEY_E0, 0};
 InterceptionKeyStroke raltUp   = {scancode::alt , INTERCEPTION_KEY_UP  | INTERCEPTION_KEY_E0, 0};
 InterceptionKeyStroke jUp      = {scancode::j   , INTERCEPTION_KEY_UP , 0};
+InterceptionKeyStroke lUp      = {scancode::l   , INTERCEPTION_KEY_UP , 0};
 
 bool operator==(const InterceptionKeyStroke &first,
                 const InterceptionKeyStroke &second) {
@@ -66,6 +68,29 @@ bool homeShortcut(const InterceptionKeyStroke &kstroke) {
     return true; // Pass through other key events
 }
 
+bool endShortcut(const InterceptionKeyStroke &kstroke) {
+    static int lwin = 0, ralt = 0, l = 0;
+    static bool shortcutActive = false;
+
+    if (kstroke == lwinDown) { lwin = 1; }
+    if (kstroke == lwinUp) { lwin = 0; }
+    if (kstroke == raltDown) { ralt = 1; }
+    if (kstroke == raltUp) { ralt = 0; }
+    if (kstroke == lDown) { l = 1; }
+    if (kstroke == lUp) { l = 0; }
+
+    if (lwin && ralt && l && !shortcutActive) {
+        shortcutActive = true;
+        return false;
+    }
+
+    if (!lwin && !ralt && !l) {
+        shortcutActive = false;
+    }
+
+    return true;
+}
+
 int main() {
     InterceptionContext context;
     InterceptionDevice device;
@@ -81,6 +106,14 @@ int main() {
             cout << "homeShortcut()" << endl;
             sendKey(context, device, scancode::home, INTERCEPTION_KEY_DOWN);
             sendKey(context, device, scancode::home, INTERCEPTION_KEY_UP);
+            continue;
+        }
+
+        if (!endShortcut(kstroke))
+        {
+            cout << "endShortcut()" << endl;
+            sendKey(context, device, scancode::end, INTERCEPTION_KEY_DOWN);
+            sendKey(context, device, scancode::end, INTERCEPTION_KEY_UP);
             continue;
         }
 

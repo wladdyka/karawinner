@@ -8,6 +8,7 @@ namespace scancode {
     enum {
         esc  = 0x01,
         ctrl = 0x1D,
+        lctrl = 29,
         alt  = 0x38,
         del  = 0x53,
         j  = 36,
@@ -161,10 +162,11 @@ int main() {
 
         if (kstroke.code == scancode::alt) continue;
         if (kstroke.code == scancode::ralt) continue;
+        if (kstroke.code == scancode::rwin) continue;
 
         if (kstroke.code == scancode::lwin) {
-            sendKey(context, device, scancode::ctrl, INTERCEPTION_KEY_DOWN);
-            sendKey(context, device, scancode::ctrl, INTERCEPTION_KEY_UP);
+            sendKey(context, device, scancode::lctrl, kstroke.state);
+            continue;
         }
 
         if (kstroke.code == scancode::capslock) {
@@ -173,9 +175,6 @@ int main() {
         }
 
         interception_send(context, device, (InterceptionStroke *)&kstroke, 1);
-
-        if (kstroke.code == scancode::esc)
-            break;
     }
 
     interception_destroy_context(context);

@@ -1,6 +1,7 @@
 #include <interception.h>
 #include <iostream>
 #include <unordered_map>
+#include <chrono>
 
 enum KeyCode {
     BACKSPACE = 14,
@@ -9,12 +10,11 @@ enum KeyCode {
     LWIN = 91,
     RWIN = 92,
     J = 36,
-    HOME = 71,
-    LEFT_ARROW = 75
+    HOME = 71
 };
 
-// Track key states
-std::unordered_map<int, unsigned short> keyState;
+// Track key states with timestamps
+std::unordered_map<int, std::chrono::steady_clock::time_point> keyTimestamps;
 
 void sendKey(InterceptionContext context, InterceptionDevice device, KeyCode keyCode, int keyState) {
     InterceptionKeyStroke keystroke;
@@ -22,6 +22,16 @@ void sendKey(InterceptionContext context, InterceptionDevice device, KeyCode key
     keystroke.state = keyState;
 
     interception_send(context, device, reinterpret_cast<const InterceptionStroke*>(&keystroke), 1);
+}
+
+// Check if a key was pressed recently (within thresholdMs milliseconds)
+bool isKeyRecentlyPressed(int keyCode, int thresholdMs) {
+    auto now = std::chrono::steady_clock::now();
+    if (keyTimestamps.count(keyCode)) {
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - keyTimestamps[keyCode]).count();
+        return elapsed < thresholdMs;
+    }
+    return false;
 }
 
 int main() {
@@ -37,42 +47,34 @@ int main() {
     while (interception_receive(context, device = interception_wait(context),
                                 reinterpret_cast<InterceptionStroke*>(&kstroke), 1) > 0) {
         // Log raw key events
-        /*std::cout << "Raw Key Code: " << kstroke.code
-                  << ", State: " << kstroke.state << std::endl;*/
+        std::cout << "Raw Key Code: " << kstroke.code
+                  << ", State: " << kstroke.state << std::endl;
 
-        // Update key state
-
-
-        // Debug: Print current states of relevant keys
-        std::cout << "State: LWIN = " << keyState[LWIN]
-                  << ", RWIN = " << keyState[RWIN]
-                  << ", J = " << keyState[J] << std::endl << "---------------------" << std::endl;
-
-        if (kstroke.code == LWIN) {
-            std::cout << "LWIN: " << kstroke.state << std::endl;
-            keyState[LWIN] = kstroke.state != 2 ? 0 : 1;
-            continue;
+        // Update key timestamps
+        if (kstroke.state == 2) { // Key Down
+            keyTimestamps[kstroke.code] = std::chrono::steady_clock::now();
+        } else if (kstroke.state == 3) { // Key Up
+            keyTimestamps.erase(kstroke.code); // Remove key from active state
         }
 
-        if (kstroke.code == RWIN) {
-            std::cout << "RWIN: " << kstroke.state << std::endl;
-            keyState[RWIN] = kstroke.state != 2 ? 0 : 1;
-            continue;
-        }
-
-        if (kstroke.code == J) {
-            std::cout << "J: " << kstroke.state << std::endl;
-            keyState[J] = kstroke.state != 0 ? 0 : 1;
-            continue;
-        }
+        // Debug: Print states of relevant keys
+        std::cout << "Key Timestamps: "
+                  << "LWIN = " << isKeyRecentlyPressed(LWIN, 100) << ", "
+                  << "RWIN = " << isKeyRecentlyPressed(RWIN, 100) << ", "
+                  << "J = " << isKeyRecentlyPressed(J, 100) << std::endl;
 
         // Check for LWIN + RWIN + J shortcut
-        if (keyState[LWIN] == 1 && keyState[RWIN] == 1 && keyState[J] == 1) {
+        if (isKeyRecentlyPressed(LWIN, 100) &&
+            isKeyRecentlyPressed(RWIN, 100) &&
+            isKeyRecentlyPressed(J, 100)) {
             std::cout << "Shortcut triggered: LWIN + RWIN + J -> Home" << std::endl;
 
             // Send the Home key
             sendKey(context, device, HOME, INTERCEPTION_KEY_DOWN);
             sendKey(context, device, HOME, INTERCEPTION_KEY_UP);
+
+            // Clear timestamps to prevent repeated triggers
+            keyTimestamps.clear();
             continue;
         }
 

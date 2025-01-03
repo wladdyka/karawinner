@@ -17,6 +17,8 @@ namespace scancode {
         home = 71,
         end = 79,
         ralt = 56,
+        left = 75,
+        right = 77,
     };
 }
 
@@ -115,6 +117,62 @@ bool endShortcut(const InterceptionKeyStroke &kstroke) {
     return true;
 }
 
+bool leftShortcut(const InterceptionKeyStroke &kstroke) {
+    static int ralt = 0, j = 0;
+
+    if (ralt + j < 1) {
+        if (kstroke == raltDown) { ralt = 1; }
+        if (kstroke == raltUp) { ralt = 0; }
+        if (kstroke == jDown) { j = 1; }
+        if (kstroke == jUp) { j = 0; }
+        return true;
+    }
+
+    if (ralt == 0 && (kstroke == raltDown || kstroke == raltUp)) {
+        return false;
+    }
+
+    if (j == 0 && (kstroke == jDown || kstroke == jUp)) {
+        return false;
+    }
+
+    if (kstroke == raltUp) {
+        ralt = 0;
+    } else if (kstroke == jUp) {
+        j = 0;
+    }
+
+    return true;
+}
+
+bool rightShortcut(const InterceptionKeyStroke &kstroke) {
+    static int ralt = 0, l = 0;
+
+    if (ralt + l < 1) {
+        if (kstroke == raltDown) { ralt = 1; }
+        if (kstroke == raltUp) { ralt = 0; }
+        if (kstroke == lDown) { l = 1; }
+        if (kstroke == lUp) { l = 0; }
+        return true;
+    }
+
+    if (ralt == 0 && (kstroke == raltDown || kstroke == raltUp)) {
+        return false;
+    }
+
+    if (l == 0 && (kstroke == lDown || kstroke == lUp)) {
+        return false;
+    }
+
+    if (kstroke == raltUp) {
+        ralt = 0;
+    } else if (kstroke == jUp) {
+        l = 0;
+    }
+
+    return true;
+}
+
 int main() {
     InterceptionContext context;
     InterceptionDevice device;
@@ -127,7 +185,7 @@ int main() {
 
     while (interception_receive(context, device = interception_wait(context),
                                 (InterceptionStroke *)&kstroke, 1) > 0) {
-        //std::cout << kstroke.code << " " << kstroke.state << std::endl;
+        std::cout << kstroke.code << " " << kstroke.state << std::endl;
 
         if (!endShortcut(kstroke)) {
             cout << "endShortcut()" << endl;
@@ -140,6 +198,20 @@ int main() {
             cout << "homeShortcut()" << endl;
             hueta(context, device, scancode::home, INTERCEPTION_KEY_DOWN);
             hueta(context, device, scancode::home, INTERCEPTION_KEY_UP);
+            continue;
+        }
+
+        if (!leftShortcut(kstroke)) {
+            cout << "leftShortcut()" << endl;
+            hueta(context, device, scancode::left, INTERCEPTION_KEY_DOWN);
+            hueta(context, device, scancode::left, INTERCEPTION_KEY_UP);
+            continue;
+        }
+
+        if (!rightShortcut(kstroke)) {
+            cout << "rightShortcut()" << endl;
+            hueta(context, device, scancode::right, INTERCEPTION_KEY_DOWN);
+            hueta(context, device, scancode::right, INTERCEPTION_KEY_UP);
             continue;
         }
 

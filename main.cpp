@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include <interception.h>
 
 using namespace std;
@@ -156,21 +155,30 @@ bool downShortcut(const InterceptionKeyStroke &kstroke) {
     return true;
 }
 
+void resetInterceptionContext(InterceptionContext &context) {
+    interception_destroy_context(context);
+    context = interception_create_context();
+    interception_set_filter(context, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
+    cout << "Interception context reset." << endl;
+}
+
 int main() {
-    InterceptionContext context;
+    InterceptionContext context = interception_create_context();
     InterceptionDevice device;
     InterceptionKeyStroke kstroke;
 
-    context = interception_create_context();
-
-    interception_set_filter(context, interception_is_keyboard,
-                            INTERCEPTION_FILTER_KEY_ALL);
+    interception_set_filter(context, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
 
     bool homeShortcutTriggered = false;
     bool endShortcutTriggered = false;
 
-    while (interception_receive(context, device = interception_wait(context),
-                                (InterceptionStroke *)&kstroke, 1) > 0) {
+    while (true) {
+        if (interception_receive(context, device = interception_wait(context),
+                                 (InterceptionStroke *)&kstroke, 1) <= 0) {
+            resetInterceptionContext(context);
+            continue;
+        }
+
         std::cout << kstroke.code << " " << kstroke.state << std::endl;
 
         if (!endShortcut(kstroke)) {
@@ -242,8 +250,4 @@ int main() {
 
         interception_send(context, device, (InterceptionStroke *)&kstroke, 1);
     }
-
-    interception_destroy_context(context);
-
-    return 0;
 }

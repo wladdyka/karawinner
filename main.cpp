@@ -14,7 +14,7 @@ enum KeyCode {
 };
 
 // Track key states
-std::unordered_map<int, short> keyState;
+std::unordered_map<int, unsigned short> keyState;
 
 void sendKey(InterceptionContext context, InterceptionDevice device, KeyCode keyCode, int keyState) {
     InterceptionKeyStroke keystroke;
@@ -37,11 +37,11 @@ int main() {
     while (interception_receive(context, device = interception_wait(context),
                                 reinterpret_cast<InterceptionStroke*>(&kstroke), 1) > 0) {
         // Log raw key events
-        std::cout << "Raw Key Code: " << kstroke.code
-                  << ", State: " << kstroke.state << std::endl;
+        /*std::cout << "Raw Key Code: " << kstroke.code
+                  << ", State: " << kstroke.state << std::endl;*/
 
         // Update key state
-        keyState[kstroke.code] = kstroke.state;
+
 
         // Debug: Print current states of relevant keys
         std::cout << "State: LWIN = " << keyState[LWIN]
@@ -49,15 +49,25 @@ int main() {
                   << ", J = " << keyState[J] << std::endl << "---------------------" << std::endl;
 
         if (kstroke.code == LWIN) {
+            std::cout << "LWIN: " << kstroke.state << std::endl;
+            keyState[LWIN] = kstroke.state != 2 ? 0 : 1;
             continue;
         }
 
         if (kstroke.code == RWIN) {
+            std::cout << "RWIN: " << kstroke.state << std::endl;
+            keyState[RWIN] = kstroke.state != 2 ? 0 : 1;
+            continue;
+        }
+
+        if (kstroke.code == J) {
+            std::cout << "J: " << kstroke.state << std::endl;
+            keyState[J] = kstroke.state != 0 ? 0 : 1;
             continue;
         }
 
         // Check for LWIN + RWIN + J shortcut
-        if (keyState[LWIN] == 2 && keyState[RWIN] == 2 && keyState[J] == 0) {
+        if (keyState[LWIN] == 1 && keyState[RWIN] == 1 && keyState[J] == 1) {
             std::cout << "Shortcut triggered: LWIN + RWIN + J -> Home" << std::endl;
 
             // Send the Home key
